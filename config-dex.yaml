@@ -1,0 +1,77 @@
+issuer: http://dex.example.com:5556
+storage:
+  type: sqlite3
+  config:
+    file: /storage/dex.db
+web:
+  http: 0.0.0.0:5556
+  # tlsCert: /data/ssl/shafi-fullchain.pem
+  # tlsKey: /data/ssl/shafi-privkey.pem
+
+logger:
+  level: "debug"
+  format: "text"
+
+connectors:
+- type: ldap
+  name: OpenLDAP
+  id: ldap
+
+  config:
+    host: openldap-container:389
+
+    # No TLS for this setup.
+    insecureNoSSL: true
+    # insecureNoSSL: false
+
+    # This would normally be a read-only user.
+    bindDN: cn=admin,dc=example,dc=org
+    bindPW: "admin"
+
+    usernamePrompt: Email Address
+
+    userSearch:
+      baseDN: ou=People,dc=example,dc=org
+      # Translates to the LDAP query "(&(objectClass=person)(mail=<user email>))"
+      #   e.g. "(&(objectClass=person)(mail=janedoe@example.com))
+      filter: "(objectClass=person)"
+
+      # Expect user to enter the value of attribute "mail" when logging in.
+      username: mail
+
+      # "DN" (case sensitive) is a special attribute name. It indicates that
+      # this value should be taken from the entity's DN not an attribute on
+      # the entity.
+      #
+      # unique identity of the user, see also 'userAttr' in groupSearch below
+      idAttr: DN
+
+      # the value of the LDAP "mail" attribute is used as email, which is stored in token
+      emailAttr: mail
+
+      # the value of the LDAP "cn" attribute is used as name, which is stored in token
+      nameAttr: cn
+
+    groupSearch:
+      baseDN: ou=Groups,dc=example,dc=org
+      # Translates to the LDAP query "(&(objectClass=groupOfNames)(member=<user DN>))"
+      #   e.g. "(&(objectClass=person)(member=cn=jane,dc=example,dc=org))
+      filter: "(objectClass=groupOfNames)"
+
+      # The group search needs to match the DN of
+      # the user with the "member" attribute on the group.
+      userMatchers:
+      # A user is a member of a group when their DN matches
+      # the value of the LDAP "member" attribute on the group entity.
+      - userAttr: DN
+        groupAttr: member
+
+      # The group name should be the "cn" value.
+      nameAttr: cn
+
+staticClients:
+- id: loginapp
+  redirectURIs:
+  - 'http://127.0.0.1:5555/callback'
+  name: 'Login App'
+  secret: ZXhhbXBsZS1hcHAtc2VjcmV0

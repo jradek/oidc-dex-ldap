@@ -1,0 +1,49 @@
+version: '3.5'
+
+volumes:
+  dex-storage:
+
+services:
+  dex-container:
+    image: quay.io/dexidp/dex:v2.23.0
+    volumes:
+    - ./storage:/storage
+    - ./ssl:/data/ssl
+    - ./config-dex.yaml:/data/config.yaml
+    command:
+    - serve
+    - /data/config.yaml
+    ports:
+    - 5556:5556
+    extra_hosts:
+    - "dex.example.com:127.0.0.1"
+    external_links:
+    - openldap-container:openldap.example.com
+
+  loginapp-container:
+    image: quay.io/fydrah/loginapp:2.7.0
+    volumes:
+    - ./ssl:/data/ssl
+    - ./config-loginapp.yaml:/data/config.yaml
+    command:
+    - serve
+    - /data/config.yaml
+    ports:
+    - 5555:5555
+    external_links:
+    - dex-container:dex.example.com
+
+  openldap-container:
+    image: osixia/openldap:1.3.0
+    restart: unless-stopped
+    environment:
+      - LDAP_ORGANISATION="Example Company"
+      - LDAP_DOMAIN=example.org
+      - LDAP_BASE_DN=dc=example,dc=org
+      - LDAP_ADMIN_PASSWORD=admin
+    command: "--loglevel info --copy-service"
+    volumes:
+      - ./ldap:/var/lib/ldap
+      - ./slapd:/etc/ldap/slapd.d
+    ports:
+      - "18081:389"

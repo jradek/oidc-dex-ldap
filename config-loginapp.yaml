@@ -1,0 +1,21 @@
+name: "Kubernetes Authentication"
+listen: "0.0.0.0:5555"
+oidc:
+  client:
+    id: "loginapp"
+    secret: ZXhhbXBsZS1hcHAtc2VjcmV0
+    redirect_url: "http://127.0.0.1:5555/callback"
+  issuer:
+    root_ca: "/data/ssl/ca.pem"
+    url: "http://dex.example.com:5556"
+  extra_scopes:
+    - groups
+  offline_as_scope: true
+# no TLS in this setup
+tls:
+  enabled: false
+  cert: ""
+  key: ""
+log:
+  level: Debug
+  format: json
